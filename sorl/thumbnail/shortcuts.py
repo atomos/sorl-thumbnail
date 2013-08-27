@@ -7,6 +7,13 @@ def get_thumbnail(file_, geometry_string, **options):
     """
     return default.backend.get_thumbnail(file_, geometry_string, **options)
 
+def get_thumbnails(files_, geometry_string, **options):
+    """
+    A shortcut for the Backend ``get_thumbnail`` method
+    """
+    return default.backend.get_thumbnails(files_, geometry_string, **options)
+
+
 
 def delete(file_, delete_file=True):
     """

@@ -22,12 +22,25 @@ class KVStore(KVStoreBase):
     def _get_raw(self, key):
         value = cache.get(key)
         if value is None:
-            try:
-                value = KVStoreModel.objects.get(key=key).value
-            except KVStoreModel.DoesNotExist:
-                # we set the cache to prevent further db lookups
+            values = self._get_raw_multiple([key])
+            assert len(values) <= 1
+
+            if len(values) == 0 or values[0].value is None:
                 value = EMPTY_VALUE
+            else:
+                value = values[0].value
+
             cache.set(key, value, settings.THUMBNAIL_CACHE_TIMEOUT)
+        if value == EMPTY_VALUE:
+            return None
+        return value
+
+    def _get_raw_multiple(self, keys):
+        try:
+            value = KVStoreModel.objects.filter(key__in=keys)
+        except KVStoreModel.DoesNotExist:
+            # we set the cache to prevent further db lookups
+            value = EMPTY_VALUE
         if value == EMPTY_VALUE:
             return None
         return value

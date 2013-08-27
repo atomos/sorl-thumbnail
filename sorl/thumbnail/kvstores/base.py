@@ -24,6 +24,12 @@ class KVStoreBase(object):
         """
         return self._get(image_file.key)
 
+    def get_multiple(self, image_files):
+        """
+        Gets the ``image_file`` from store. Returns ``None`` if not found.
+        """
+        return self._get_multiple([imf.key for imf in image_files])
+
     def set(self, image_file, source=None):
         """
         Updates store for the `image_file`. Makes sure the `image_file` has a
@@ -126,6 +132,24 @@ class KVStoreBase(object):
         if identity == 'image':
             return deserialize_image_file(value)
         return deserialize(value)
+
+    def _get_multiple(self, keys, identity='image'):
+        """
+        Deserializing, prefix wrapper for _get_raw
+        """
+        raw_results = self._get_raw_multiple([add_prefix(k, identity) for k in keys])
+        results = []
+        for raw_result in raw_results:
+
+            if raw_result is None:
+                result = None
+            elif identity == 'image':
+                result = deserialize_image_file(raw_result.value)
+            else:
+                result = deserialize(raw_result.value)
+            results.append((raw_result, result))
+
+        return results
 
     def _set(self, key, value, identity='image'):
         """
