@@ -4,6 +4,7 @@ from sorl.thumbnail.images import ImageFile
 from sorl.thumbnail import default
 from sorl.thumbnail.parsers import parse_geometry
 import logging
+import copy
 
 logger = logging.getLogger(__name__)
 
@@ -71,39 +72,41 @@ class ThumbnailBackend(object):
         return thumbnail
 
     def get_thumbnails(self, files_, geometry_string, **options):
+        files_ = copy.copy(files_)
         results = [None]*len(files_)
-        print "files_ is %s, len is %s" % (files_, len(files_))
         thumbnails = []
         thumbnail_to_file = {}
         for file_ in files_:
             source = ImageFile(file_)
             for key, value in self.default_options.iteritems():
                 options.setdefault(key, value)
-            # For the future I think it is better to add options only if they
-            # differ from the default settings as below. This will ensure the same
-            # filenames beeing generated for new options at default.
+
             for key, attr in self.extra_options:
                 value = getattr(settings, attr)
                 if value != getattr(default_settings, attr):
                     options.setdefault(key, value)
+
             name = self._get_thumbnail_filename(source, geometry_string, options)
             thumbnail = ImageFile(name, default.storage)
             thumbnails.append(thumbnail)
-            thumbnail_to_file[thumbnail.key] = file_
+            thumbnail_to_file.setdefault(thumbnail.key, [])
+            thumbnail_to_file[thumbnail.key].append(file_)
 
         raw_result_pairs = default.kvstore.get_multiple(thumbnails)
         for thumbnail_record, result in raw_result_pairs:
-            print "thumbnail_to_file is %s" % thumbnail_to_file
             key_hash = thumbnail_record.key.split("||")[-1]
-            file_ = thumbnail_to_file[key_hash]
-            print "found result %s for %s (%s)" % (result, thumbnail_record.key, file_)
-            results[files_.index(file_)] = result
+            file_list = thumbnail_to_file[key_hash]
+            for file_ in file_list:
+                index = files_.index(file_)
+                results[index] = result
+                files_[index] = None
             del thumbnail_to_file[key_hash]
 
-        for file_ in thumbnail_to_file.values():
-            logger.warning("failed to find result in group query for %s" % file_)
-            result = self.get_thumbnail(file_, geometry_string, **options)
-            results[files_.index(file_)] = result
+        for file_list in thumbnail_to_file.values():
+            for file_ in file_list:
+                logger.warning("failed to find result in group query for %s" % file_)
+                result = self.get_thumbnail(file_, geometry_string, **options)
+                results[files_.index(file_)] = result
 
         assert None not in results, results
         return results
