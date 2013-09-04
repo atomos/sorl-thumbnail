@@ -130,14 +130,20 @@ class ImageFile(BaseImageFile):
         return self.storage.delete(self.name)
 
     def serialize_storage(self):
+        # An optimization to get the wrapped class name without instantiating the class (for boto storage it creates
+        # a connection to S3)
+        return "storages.backends.s3boto.S3BotoStorage"
+
         if isinstance(self.storage, LazyObject):
             # if storage is wrapped in a lazy object we need to get the real
             # thing.
             self.storage._setup()
             cls = self.storage._wrapped.__class__
+
         else:
             cls = self.storage.__class__
         return '%s.%s' % (cls.__module__, cls.__name__)
+        """
 
     @property
     def key(self):

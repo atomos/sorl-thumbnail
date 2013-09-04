@@ -89,8 +89,9 @@ class ThumbnailBackend(object):
             name = self._get_thumbnail_filename(source, geometry_string, options)
             thumbnail = ImageFile(name, default.storage)
             thumbnails.append(thumbnail)
-            thumbnail_to_file.setdefault(thumbnail.key, [])
-            thumbnail_to_file[thumbnail.key].append(file_)
+            thumbnail_key = thumbnail.key
+            thumbnail_to_file.setdefault(thumbnail_key, [])
+            thumbnail_to_file[thumbnail_key].append(file_)
 
         raw_result_pairs = default.kvstore.get_multiple(thumbnails)
         for thumbnail_record, result in raw_result_pairs:
