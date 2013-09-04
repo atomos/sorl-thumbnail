@@ -134,6 +134,7 @@ class ImageFile(BaseImageFile):
         # a connection to S3)
         return "storages.backends.s3boto.S3BotoStorage"
 
+        """
         if isinstance(self.storage, LazyObject):
             # if storage is wrapped in a lazy object we need to get the real
             # thing.
