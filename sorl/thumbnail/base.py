@@ -106,7 +106,13 @@ class ThumbnailBackend(object):
         for file_list in thumbnail_to_file.values():
             for file_ in file_list:
                 logger.warning("failed to find result in group query for %s" % file_)
-                result = self.get_thumbnail(file_, geometry_string, **options)
+
+                try:
+                    result = self.get_thumbnail(file_, geometry_string, **options)
+                except Exception, e:
+                    logger.error("Could create thumbnail for photo %s, returning original image: %s" % (file_, e))
+                    result = ImageFile(file_.name, default.storage)
+
                 results[files_.index(file_)] = result
 
         assert None not in results, results
